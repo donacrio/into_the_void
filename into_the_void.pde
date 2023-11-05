@@ -1,4 +1,4 @@
-// IMPORTS JTS //<>//
+// IMPORTS JTS
 import org.locationtech.jts.*;
 import org.locationtech.jts.algorithm.*;
 import org.locationtech.jts.algorithm.construct.*;
@@ -61,15 +61,19 @@ import org.locationtech.jts.triangulate.quadedge.*;
 import org.locationtech.jts.triangulate.tri.*;
 import org.locationtech.jts.util.*;
 
+import java.util.HashSet;
+import java.util.List;
+
 // CONSTANTS
 int DIMENSION = 720;
 int RESOLUTION = 10;
+int REFRESH_RATE = 10;
 
 // GLOBALS
 GeometryFactory GF;
-ArrayList<Shape> shapes;
-ArrayList<Shape> drawables;
-ArrayList<Shape> growables;
+ShapeFactory SF;
+List<Shape> shapes;
+HashMap<Shape, HashSet<Shape>> intersections;
 int nPoints = 0;
 
 Geometry box; // TODO add to shapes
@@ -78,37 +82,11 @@ void setup() {
   size(720, 720);
   
   GF = new GeometryFactory();
+  SF = new ShapeFactory();
   shapes = new ArrayList<Shape>();
-  drawables = new ArrayList<Shape>();
-  growables = new ArrayList<Shape>();
+  intersections = new HashMap<Shape, HashSet<Shape>>();
   
-  // Create sketch boudaries
-  GeometricShapeFactory gsf = new GeometricShapeFactory(GF);
-  gsf.setCentre(new Coordinate(0, 0));
-  gsf.setSize(DIMENSION);
-  box = gsf.createRectangle();
-  
-  for(int i=0; i<10; i++) {
-    Coordinate start = new Coordinate(0, 0);
-    float angle = random(2*PI);
-    Vector2D direction = new Vector2D(new Coordinate(cos(angle), sin(angle)));
-    Shape shape = new Segment(start, direction);
-    shapes.add(shape);
-    drawables.add(shape);
-    growables.add(shape);
-  }
-  
-  for(int i=0; i<10; i++) {
-    Coordinate center = new Coordinate(0, 0);
-    float angle = random(2*PI);
-    Vector2D radial = (new Vector2D(new Coordinate(cos(angle), sin(angle)))).multiply(random(DIMENSION));
-    boolean clockwise = random(1) > .5;
-    Shape shape = new Arc(center, radial, clockwise);
-    shapes.add(shape);
-    drawables.add(shape);
-    growables.add(shape);
-  }
-  
+  initShapes();
   background(255);
 }
 
@@ -119,36 +97,71 @@ void draw() {
   background(255);
   translate(DIMENSION/2, DIMENSION/2);
 
-  t+=1;
-  ArrayList<Shape> toRemove = new ArrayList<Shape>();
-  for(Shape growable : growables) {
-    boolean wasIntersectingBefore = isIntersecting(growable, shapes);
-    
-    growable.grow(t);    
-    
-    boolean isIntersectingAfter = isIntersecting(growable, shapes);
-    if(!wasIntersectingBefore && isIntersectingAfter) {
-      toRemove.add(growable);
-    }
-    //} else if (growable.geom.intersects(box)) {
-    //  toRemove.add(growable);
-    //}
+  growShapes(t, REFRESH_RATE);
+  for(Shape shape : shapes) {    
+    shape.draw();
   }
-  growables.removeAll(toRemove);
+  t += REFRESH_RATE; 
+}
 
-  for(Shape drawable : drawables) {
-    drawable.draw();
+void initShapes() {
+  List<Shape> segments = new ArrayList<Shape>();
+  List<Shape> arcs = new ArrayList<Shape>();
+  for(int i=0; i<25; i++) {
+    if(random(1)>0.5) {
+        segments.add(SF.createRandomSegment(new Coordinate(0,0)));
+      }
+     else {
+      arcs.add(SF.createRandomArc(new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2))));
+     }
+  }
+   
+  // Adding initial segments to avoid collision at (0,0)
+  for(Shape segment: segments) {
+    HashSet<Shape> others = intersections.getOrDefault(segment, new HashSet<Shape>());
+    others.addAll(segments);
+    intersections.put(segment, others);
+  }
+  
+  shapes.addAll(segments);
+  shapes.addAll(arcs);
+  
+  // sketch box
+  Geometry geom = GF.createLineString(new Coordinate[] {
+    new Coordinate(-DIMENSION/2, -DIMENSION/2),
+    new Coordinate(-DIMENSION/2, DIMENSION/2),
+    new Coordinate(DIMENSION/2, DIMENSION/2),
+    new Coordinate(DIMENSION/2, -DIMENSION/2),
+    new Coordinate(-DIMENSION/2, -DIMENSION/2),
+  });
+  Growable g = new Inert(geom);
+  Drawable d = new Invisible();
+  Shape box = new Shape(g, d); 
+  box.grow(0);
+  shapes.add(box);
+  
+  // Add shapes to their own intersection shapes to avoid
+  // self collision detection
+  for(Shape shape : shapes) {
+    intersections.putIfAbsent(shape, new HashSet<Shape>());
   }
 }
 
-boolean isIntersecting(Shape shape, ArrayList<Shape> others) {
-  for(Shape other : others) {
-    if(shape != other && shape.intersects(other)) {
-        Geometry intersection = shape.geom.intersection(other.geom);
-        if(intersection.compareTo(GF.createPoint(new Coordinate(0,0))) != 0) {
-          return true;
-        }
+void growShapes(int t, int steps) {
+  int i = 0;
+  boolean keepGrowing = true;
+  while(keepGrowing && i<steps) {
+    keepGrowing = false;
+    for(Shape shape : shapes) {    
+      shape.grow(t+i);    
+      if(shape.hasNewIntersection(shapes, intersections)) {
+        shape.growable = new Inert(shape.geom);
+      }
+      if(shape.growable.growing()) {
+        keepGrowing = true;
       }
     }
-  return false;
+    i++;
+  }
+  println(keepGrowing);
 }
