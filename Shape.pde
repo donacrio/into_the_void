@@ -13,6 +13,10 @@ public class Shape {
     this.geom = this.growable.grow(t);
   }
   
+  public void stop() {
+    
+  }
+  
   public boolean intersects(Shape other) {
     return this.geom.intersects(other.geom);
   }
@@ -21,7 +25,11 @@ public class Shape {
     this.drawable.draw(this.geom);
   }
   
-  public boolean hasNewIntersection(List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
+  public boolean growing(int t, List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
+    return this.growable.growing(t) && !this.hasNewIntersection(others, intersections);
+  }
+  
+  private boolean hasNewIntersection(List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
     for(Shape other : others) {
       HashSet<Shape> shapeIntersections = intersections.getOrDefault(this, new HashSet<Shape>());
       // Shape doesn't already intersect other

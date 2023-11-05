@@ -1,6 +1,6 @@
 public interface Growable {
   public Geometry grow(int t);
-  public boolean growing();
+  public boolean growing(int t);
 }
 
 public class Inert implements Growable {
@@ -14,7 +14,7 @@ public class Inert implements Growable {
     return this.geom;
   }
   
-  public boolean growing() {
+  public boolean growing(int t) {
     return false;
   }
 }
@@ -33,26 +33,25 @@ public class Segment implements Growable {
     return GF.createLineString(new Coordinate[] {this.start, end});
   }
   
-  public boolean growing() {
+  public boolean growing(int t) {
     return true;
   }
 }
 
 public class Arc implements Growable {
-  private final Coordinate center;
+  private GeometricShapeFactory gsf;
   private final Vector2D radial;
   private final boolean clockwise;
   
   public Arc(Coordinate center, Vector2D radial, boolean clockwise) {
-    this.center = center;
+    this.gsf = new GeometricShapeFactory(GF);
+    this.gsf.setCentre(center);
+    this.gsf.setSize(radial.length());
     this.radial = radial;
     this.clockwise = clockwise;
   }
   
   public Geometry grow(int t) {
-    GeometricShapeFactory gsf = new GeometricShapeFactory(GF);
-    gsf.setCentre(this.center);
-    gsf.setSize(radial.length());
     double angle = PI / DIMENSION * t;
     LineString arc = gsf.createArc(radial.angle(), angle);
     if(this.clockwise) {
@@ -61,7 +60,7 @@ public class Arc implements Growable {
     return arc;
   }
   
-  public boolean growing() {
-    return true;
+  public boolean growing(int t) {
+    return  t / DIMENSION < 2;
   }
 }

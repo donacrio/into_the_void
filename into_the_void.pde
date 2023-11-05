@@ -67,7 +67,8 @@ import java.util.List;
 // CONSTANTS
 int DIMENSION = 720;
 int RESOLUTION = 10;
-int REFRESH_RATE = 10;
+int REFRESH_RATE = 100;
+int SHAPES_PER_STEP = 25;
 
 // GLOBALS
 GeometryFactory GF;
@@ -107,8 +108,8 @@ void draw() {
 void initShapes() {
   List<Shape> segments = new ArrayList<Shape>();
   List<Shape> arcs = new ArrayList<Shape>();
-  for(int i=0; i<25; i++) {
-    if(random(1)>0.5) {
+  for(int i=0; i<SHAPES_PER_STEP; i++) {
+    if(random(1) < 0.5) {
         segments.add(SF.createRandomSegment(new Coordinate(0,0)));
       }
      else {
@@ -154,10 +155,9 @@ void growShapes(int t, int steps) {
     keepGrowing = false;
     for(Shape shape : shapes) {    
       shape.grow(t+i);    
-      if(shape.hasNewIntersection(shapes, intersections)) {
+      if(!shape.growing(t+i, shapes, intersections)) {
         shape.growable = new Inert(shape.geom);
-      }
-      if(shape.growable.growing()) {
+      } else {
         keepGrowing = true;
       }
     }
