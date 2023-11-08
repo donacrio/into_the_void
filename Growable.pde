@@ -1,21 +1,28 @@
 public interface Growable {
-  public Geometry grow(int t);
-  public boolean growing(int t);
+  public LineString grow(int t);
+  public boolean canGrow(int t);
+  public Growable createChild(LineString geom);
 }
 
-public class Inert implements Growable {
-  private Geometry geom;
-  
-  public Inert(Geometry geom) {
-    this.geom = geom;
+public class GrowableFactory {
+  public Growable createGrowable(Coordinate start) {
+    if(random(1) < 0.5) {
+      return this.createSegment(start);
+    }
+    return this.createArc(start);
   }
   
-  public Geometry grow(int t) {
-    return this.geom;
+  public Growable createSegment(Coordinate start) {
+    float angle = random(2*PI);
+    Vector2D direction = new Vector2D(new Coordinate(cos(angle), sin(angle)));
+    return new Segment(start, direction);
   }
   
-  public boolean growing(int t) {
-    return false;
+  public Growable createArc(Coordinate start) {
+    Coordinate center = new Coordinate(0, 0);
+    Vector2D radial = new Vector2D(start);
+    boolean clockwise = random(1) > .5;
+    return new Arc(center, radial, clockwise);
   }
 }
 
@@ -28,13 +35,19 @@ public class Segment implements Growable {
     this.direction = direction;
   }
   
-  public Geometry grow(int t) {
+  public LineString grow(int t) {
     Coordinate end = direction.multiply(t).toCoordinate();
-    return GF.createLineString(new Coordinate[] {this.start, end});
+    return GEOMETRY_FACTORY.createLineString(new Coordinate[] {this.start, end});
   }
   
-  public boolean growing(int t) {
+  public boolean canGrow(int t) {
     return true;
+  }
+  
+  public Growable createChild(LineString geom) {
+    LineString densified = (LineString) Densifier.densify(geom, 1.0);
+    Point start = densified.getPointN(int(random(densified.getNumPoints())));
+    return GROWABLE_FACTORY.createGrowable(start.getCoordinate());
   }
 }
 
@@ -44,14 +57,14 @@ public class Arc implements Growable {
   private final boolean clockwise;
   
   public Arc(Coordinate center, Vector2D radial, boolean clockwise) {
-    this.gsf = new GeometricShapeFactory(GF);
+    this.gsf = new GeometricShapeFactory(GEOMETRY_FACTORY);
     this.gsf.setCentre(center);
     this.gsf.setSize(radial.length());
     this.radial = radial;
     this.clockwise = clockwise;
   }
   
-  public Geometry grow(int t) {
+  public LineString grow(int t) {
     double angle = PI / DIMENSION * t;
     LineString arc = gsf.createArc(radial.angle(), angle);
     if(this.clockwise) {
@@ -60,7 +73,13 @@ public class Arc implements Growable {
     return arc;
   }
   
-  public boolean growing(int t) {
+  public boolean canGrow(int t) {
     return  t / DIMENSION < 2;
+  }
+  
+  public Growable createChild(LineString geom) {
+    LineString densified = (LineString) Densifier.densify(geom, 1.0);
+    Point start = densified.getPointN(int(random(densified.getNumPoints())));
+    return GROWABLE_FACTORY.createSegment(start.getCoordinate());
   }
 }

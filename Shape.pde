@@ -1,12 +1,21 @@
 public class Shape {
-  public Geometry geom;
+  public LineString geom;
   public Growable growable;
   public Drawable drawable;
+  public boolean isGrowing;
   
   public Shape(Growable growable, Drawable drawable) {
-    this.geom = GF.createEmpty(2);
+    this.geom = GEOMETRY_FACTORY.createLineString();
     this.growable = growable;
     this.drawable = drawable;
+    this.isGrowing = true;
+  }
+  
+  public Shape(LineString geom, Growable growable, Drawable drawable, boolean isGrowing) {
+    this.geom = geom;
+    this.growable = growable;
+    this.drawable = drawable;
+    this.isGrowing = isGrowing;
   }
   
   public void grow(int t) {
@@ -14,7 +23,7 @@ public class Shape {
   }
   
   public void stop() {
-    
+    this.isGrowing = false;
   }
   
   public boolean intersects(Shape other) {
@@ -25,8 +34,8 @@ public class Shape {
     this.drawable.draw(this.geom);
   }
   
-  public boolean growing(int t, List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
-    return this.growable.growing(t) && !this.hasNewIntersection(others, intersections);
+  public boolean canGrow(int t, List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
+    return this.isGrowing && this.growable.canGrow(t) && !this.hasNewIntersection(others, intersections);
   }
   
   private boolean hasNewIntersection(List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
@@ -40,32 +49,5 @@ public class Shape {
       }
     }
     return false;
-  }
-}
-
-public class ShapeFactory {
-  public Shape createShape(Coordinate start) {
-    //Coordinate start = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-    if(random(1)>0.5) {
-      return this.createRandomSegment(start);
-    }
-    return this.createRandomArc(start);
-  }
-  
-  public Shape createRandomSegment(Coordinate start) {
-    float angle = random(2*PI);
-    Vector2D direction = new Vector2D(new Coordinate(cos(angle), sin(angle)));
-    Growable segment = new Segment(start, direction);
-    Drawable visible = new Visible();
-    return new Shape(segment, visible);
-  }
-  
-  public Shape createRandomArc(Coordinate start) {
-    Coordinate center = new Coordinate(0, 0);
-    Vector2D radial = new Vector2D(start);
-    boolean clockwise = random(1) > .5;
-    Growable arc = new Arc(center, radial, clockwise);
-    Drawable visible = new Visible();
-    return new Shape(arc, visible);
   }
 }
