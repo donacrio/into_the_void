@@ -1,53 +1,84 @@
-public class Shape {
+public abstract class Shape {
   public LineString geom;
-  public Growable growable;
-  public Drawable drawable;
-  public boolean isGrowing;
+  public boolean growStart;
+  public boolean growEnd;
   
-  public Shape(Growable growable, Drawable drawable) {
-    this.geom = GEOMETRY_FACTORY.createLineString();
-    this.growable = growable;
-    this.drawable = drawable;
-    this.isGrowing = true;
+  public void grow(List<Shape> shapes) {
+    if(this.growStart) {
+      updateStart(shapes);
+    }
+   if(this.growEnd) {
+      updateEnd(shapes);
+    }
   }
   
-  public Shape(LineString geom, Growable growable, Drawable drawable, boolean isGrowing) {
-    this.geom = geom;
-    this.growable = growable;
-    this.drawable = drawable;
-    this.isGrowing = isGrowing;
+  public abstract void updateStart(List<Shape> shapes);
+  public abstract void updateEnd(List<Shape> shapes);
+  
+  public abstract void draw();
+}
+
+public class Boundary extends Shape {
+  public Boundary() {
+    this.geom = GF.createLineString(new Coordinate[] {
+      new Coordinate(-DIMENSION/2, -DIMENSION/2),
+      new Coordinate(-DIMENSION/2, DIMENSION/2),
+      new Coordinate(DIMENSION/2, DIMENSION/2),
+      new Coordinate(DIMENSION/2, -DIMENSION/2),
+      new Coordinate(-DIMENSION/2, -DIMENSION/2)
+    });
+    this.growStart = false;
+    this.growEnd = false;
   }
   
-  public void grow(int t) {
-    this.geom = this.growable.grow(t);
+  public void updateStart(List<Shape> shapes){};
+  public void updateEnd(List<Shape> shapes){};
+  public void draw() {}
+}
+
+public class Segment extends Shape {
+  public Segment(Coordinate start, Coordinate end) {
+    super();
+    this.geom = GF.createLineString(new Coordinate[] {start, end});
+    this.growStart = true;
+    this.growEnd = true;
   }
   
-  public void stop() {
-    this.isGrowing = false;
-  }
-  
-  public boolean intersects(Shape other) {
-    return this.geom.intersects(other.geom);
-  }
-  
-  public void draw() {
-    this.drawable.draw(this.geom);
-  }
-  
-  public boolean canGrow(int t, List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
-    return this.isGrowing && this.growable.canGrow(t) && !this.hasNewIntersection(others, intersections);
-  }
-  
-  private boolean hasNewIntersection(List<Shape> others, HashMap<Shape, HashSet<Shape>> intersections) {
-    for(Shape other : others) {
-      HashSet<Shape> shapeIntersections = intersections.getOrDefault(this, new HashSet<Shape>());
-      // Shape doesn't already intersect other
-      if(this!=other && !shapeIntersections.contains(other) && this.intersects(other)) {
-        shapeIntersections.add(other);
-        intersections.get(other).add(this);
-        return true;
+  public void updateStart(List<Shape> shapes) {
+    Vector2D start = new Vector2D(this.geom.getStartPoint().getCoordinate());
+    Vector2D end = new Vector2D(this.geom.getEndPoint().getCoordinate());
+    Vector2D direction = start.subtract(end).normalize();
+    Vector2D newStart = start.add(direction);
+    LineString newSegment = GF.createLineString(new Coordinate[]{ newStart.toCoordinate(), start.toCoordinate()});
+    for(Shape shape : shapes) {
+      if(this != shape && newSegment.intersects(shape.geom)) {
+        this.growStart = false;
       }
     }
-    return false;
+    // TODO: clip to intersection
+    this.geom = GF.createLineString(new Coordinate[]{ newStart.toCoordinate(), end.toCoordinate()});
   }
+  
+  public void updateEnd(List<Shape> shapes) {
+    Vector2D start = new Vector2D(this.geom.getStartPoint().getCoordinate());
+    Vector2D end = new Vector2D(this.geom.getEndPoint().getCoordinate());
+    Vector2D direction = end.subtract(start).normalize();
+    Vector2D newEnd = end.add(direction);
+    LineString newSegment = GF.createLineString(new Coordinate[]{ end.toCoordinate(), newEnd.toCoordinate()});
+    for(Shape shape : shapes) {
+      if(this != shape && newSegment.intersects(shape.geom)) {
+        this.growEnd = false;
+      }
+    }
+    // TODO: clip to intersection
+    this.geom = GF.createLineString(new Coordinate[]{ start.toCoordinate(), newEnd.toCoordinate()});
+  }
+  
+  public void draw(){
+    beginShape();
+    for(Coordinate coord : this.geom.getCoordinates()) {
+      vertex((float) coord.x, (float) coord.y);
+    }
+    endShape();
+  };
 }

@@ -67,36 +67,27 @@ import java.util.List;
 // CONSTANTS
 int DIMENSION = 720;
 int RESOLUTION = 10;
-int STEPS = 2;
-int SHAPES_PER_STEP = 3;
+int REFRESH_RATE = 10;
+int SHAPES_PER_STEP = 10;
 
 // GLOBALS
-GeometryFactory GEOMETRY_FACTORY;
-GrowableFactory GROWABLE_FACTORY;
+GeometryFactory GF;
 List<Shape> shapes;
-HashMap<Shape, HashSet<Shape>> intersections;
 int nPoints = 0;
-
-Geometry box; // TODO add to shapes
 
 void setup() {
   size(720, 720);
   
-  GEOMETRY_FACTORY = new GeometryFactory();
-  GROWABLE_FACTORY = new GrowableFactory();
+  GF = new GeometryFactory();
   shapes = new ArrayList<Shape>();
-  intersections = new HashMap<Shape, HashSet<Shape>>();
   
-  initShapes(SHAPES_PER_STEP);
+  shapes.add(new Boundary());
   
-  // Grow initial shapes
-  growShapes(shapes);
-    
-  // Grow childrens
-  for(int i=0; i<STEPS; i++) {
-    List<Shape> newShapes = createNewShapes(shapes, intersections, SHAPES_PER_STEP);
-    shapes.addAll(newShapes);
-    growShapes(shapes);
+  for(int i=0; i<SHAPES_PER_STEP; i++) {
+    Coordinate start = new Coordinate(0, 0);
+    Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
+    Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
+    shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
   }
 }
 
@@ -105,86 +96,24 @@ void draw() {
   background(255);
   translate(DIMENSION/2, DIMENSION/2);
 
+  boolean stillGrowing = false;
+  for(int i=0; i<REFRESH_RATE; i++) {
+    for(Shape shape : shapes) {
+      shape.grow(shapes);
+      stillGrowing |= shape.growStart | shape.growEnd;
+    }
+  }
   for(Shape shape : shapes) {
         shape.draw();
   }
-}
-
-void initShapes(int n) {
-  List<Shape> segments = new ArrayList<Shape>();
-  List<Shape> arcs = new ArrayList<Shape>();
-  for(int i=0; i<n; i++) {
-    Drawable visible = new Visible();
-    if(random(1) < 0.5) {
-        Growable segment = GROWABLE_FACTORY.createSegment(new Coordinate(0,0));
-        segments.add(new Shape(segment, visible));
-      }
-     else {
-       Growable arc = GROWABLE_FACTORY.createArc(new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2)));
-      arcs.add(new Shape(arc, visible));
-     }
-  }
-   
-  // Adding initial segments to avoid collision at (0,0)
-  for(Shape segment: segments) {
-    HashSet<Shape> others = intersections.getOrDefault(segment, new HashSet<Shape>());
-    others.addAll(segments);
-    intersections.put(segment, others);
-  }
   
-  shapes.addAll(segments);
-  shapes.addAll(arcs);
-  
-  // sketch box
-  LineString geom = GEOMETRY_FACTORY.createLineString(new Coordinate[] {
-    new Coordinate(-DIMENSION/2, -DIMENSION/2),
-    new Coordinate(-DIMENSION/2, DIMENSION/2),
-    new Coordinate(DIMENSION/2, DIMENSION/2),
-    new Coordinate(DIMENSION/2, -DIMENSION/2),
-    new Coordinate(-DIMENSION/2, -DIMENSION/2),
-  });
-  Drawable d = new Invisible();
-  Shape box = new Shape(geom, null, d, false); 
-  shapes.add(box);
-  
-  // Add shapes to their own intersection shapes to avoid
-  // self collision detection
-  for(Shape shape : shapes) {
-    intersections.putIfAbsent(shape, new HashSet<Shape>());
+  if(!stillGrowing) {
+    // New random shapes
+    for(int i=0; i<SHAPES_PER_STEP; i++) {
+    Coordinate start = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
+    Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
+    Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
+    shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
   }
-}
-
-List<Shape> createNewShapes(List<Shape> existing, HashMap<Shape, HashSet<Shape>> intersections, int n) {
-  List<Shape> newShapes = new  ArrayList<Shape>();
-  for(int i=0; i<n; i++) {
-    Shape parent = existing.get(int(random(existing.size())));
-    if(parent.growable != null) {
-      Growable g = parent.growable.createChild(parent.geom);
-      Drawable d = new Visible();
-      Shape shape = new Shape(g, d);
-      intersections.put(shape, new HashSet<Shape>() {{ add(parent); }});
-      newShapes.add(shape);
-    }
-  }
-  return newShapes;
-}
-
-void growShapes(List<Shape> shapes) {
-  println(String.format("Growing %d shapes", shapes.size()));
-  int t = 0;
-  boolean keepGrowing = true;
-  while(keepGrowing) {
-    keepGrowing = false;
-    for(Shape shape : shapes) { 
-      if(shape.isGrowing) {
-        shape.grow(t);    
-        if(!shape.canGrow(t, shapes, intersections)) {
-          shape.stop();
-        } else {
-          keepGrowing = true;
-        }
-      }
-    }
-    t++;
   }
 }
