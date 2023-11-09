@@ -82,3 +82,56 @@ public class Segment extends Shape {
     endShape();
   };
 }
+
+public class Arc extends Shape {
+  private GeometricShapeFactory gsf;
+  // TODO: set angleExtent & clockwise/anto-clockwise
+  
+  public Arc(double radius, double startAngle) {
+    super();
+    this.gsf = new GeometricShapeFactory(GF);
+    this.gsf.setCentre(new Coordinate(0,0));
+    this.gsf.setSize(radius);
+    this.geom = gsf.createArc(startAngle, 1 / DIMENSION);
+    this.growStart = true;
+    this.growEnd = true;
+  }
+  
+  public void updateStart(List<Shape> shapes) {
+    Vector2D start = new Vector2D(this.geom.getStartPoint().getCoordinate());
+    Vector2D end = new Vector2D(this.geom.getEndPoint().getCoordinate());
+    LineString newSegment = gsf.createArc(start.angle(), -1/DIMENSION);
+    for(Shape shape : shapes) {
+      if(this != shape && newSegment.intersects(shape.geom)) {
+        this.growStart = false;
+      }
+    }
+    // TODO: clip to intersection
+    Vector2D newStart = start.rotate(-1/DIMENSION);
+    double newExtent = end.angleTo(newStart);
+    this.geom =  gsf.createArc(newStart.angle(), newExtent);
+  }
+  
+  public void updateEnd(List<Shape> shapes) {
+    Vector2D start = new Vector2D(this.geom.getStartPoint().getCoordinate());
+    Vector2D end = new Vector2D(this.geom.getEndPoint().getCoordinate());
+    LineString newSegment = gsf.createArc(end.angle(), 1/DIMENSION);
+    for(Shape shape : shapes) {
+      if(this != shape && newSegment.intersects(shape.geom)) {
+        this.growStart = false;
+      }
+    }
+    // TODO: clip to intersection
+    Vector2D newEnd = end.rotate(1/DIMENSION);
+    double newExtent = start.angleTo(newEnd);
+    this.geom =  gsf.createArc(newEnd.angle(), newExtent);
+  }
+  
+  public void draw(){
+    beginShape();
+    for(Coordinate coord : this.geom.getCoordinates()) {
+      vertex((float) coord.x, (float) coord.y);
+    }
+    endShape();
+  };
+}
