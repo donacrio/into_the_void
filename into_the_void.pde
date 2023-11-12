@@ -67,8 +67,8 @@ import java.util.List;
 // CONSTANTS
 int DIMENSION = 720;
 int RESOLUTION = 10;
-int REFRESH_RATE = 10;
-int SHAPES_PER_STEP = 25;
+int REFRESH_RATE = 4;
+int SHAPES_PER_STEP = 10;
 
 // GLOBALS
 GeometryFactory GF;
@@ -84,17 +84,17 @@ void setup() {
   shapes.add(new Boundary());
   
   // TODO: random shape
-  //for(int i=0; i<SHAPES_PER_STEP; i++) {
-  //  Coordinate start = new Coordinate(0, 0);
-  //  Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-  //  Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
-  //  shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
-  //}
+  for(int i=0; i<SHAPES_PER_STEP; i++) {
+    Coordinate start = new Coordinate(0, 0);
+    Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
+    Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
+    shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
+  }
   
   for(int i=0; i<SHAPES_PER_STEP; i++) {
     double radius = random(DIMENSION/2);
     double startAngle = random(2*PI);
-    shapes.add(new Arc(radius, startAngle));
+    shapes.add(new Arc(radius, startAngle, 2*PI/DIMENSION));
   }
 }
 
@@ -117,10 +117,15 @@ void draw() {
   if(!stillGrowing) {
     // New random shapes
     for(int i=0; i<SHAPES_PER_STEP; i++) {
-    Coordinate start = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-    Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-    Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
-    shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
-  }
+      Coordinate start = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
+      Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
+      Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
+      shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
+    }
+    for(int i=0; i<SHAPES_PER_STEP; i++) {
+      double radius = random(DIMENSION/2);
+      double startAngle = random(2*PI);
+      shapes.add(new Arc(radius, startAngle, 2*PI/DIMENSION));
+    }
   }
 }

@@ -85,14 +85,18 @@ public class Segment extends Shape {
 
 public class Arc extends Shape {
   private GeometricShapeFactory gsf;
+  private double angleIncr;
+  private double angleExtent;
   // TODO: set angleExtent & clockwise/anto-clockwise
   
-  public Arc(double radius, double startAngle) {
+  public Arc(double radius, double startAngle, double angleIncr) {
     super();
     this.gsf = new GeometricShapeFactory(GF);
     this.gsf.setCentre(new Coordinate(0,0));
-    this.gsf.setSize(radius);
-    this.geom = gsf.createArc(startAngle, 1 / DIMENSION);
+    this.gsf.setSize(2*radius);
+    this.angleIncr = angleIncr;
+    this.angleExtent = angleIncr;
+    this.geom = gsf.createArc(startAngle, angleIncr);
     this.growStart = true;
     this.growEnd = true;
   }
@@ -100,31 +104,49 @@ public class Arc extends Shape {
   public void updateStart(List<Shape> shapes) {
     Vector2D start = new Vector2D(this.geom.getStartPoint().getCoordinate());
     Vector2D end = new Vector2D(this.geom.getEndPoint().getCoordinate());
-    LineString newSegment = gsf.createArc(start.angle(), -1/DIMENSION);
-    for(Shape shape : shapes) {
-      if(this != shape && newSegment.intersects(shape.geom)) {
+    
+    this.angleExtent += this.angleIncr;
+    if(this.angleExtent >= 2*PI) {
         this.growStart = false;
+        this.geom = gsf.createArc(start.angle(), 2*PI);
+    } else {
+      LineString newSegment = gsf.createArc(start.angle() - this.angleIncr, this.angleIncr);
+      for(Shape shape : shapes) {
+        if(this != shape && newSegment.intersects(shape.geom)) {
+          this.growStart = false;
+        }
       }
+      // TODO: clip to intersection
+      // TODO:
+      this.geom =  gsf.createArc(
+        Angle.normalizePositive(start.angle()- this.angleIncr),
+        Angle.normalizePositive(start.angleTo(end)) + this.angleIncr
+      );
     }
-    // TODO: clip to intersection
-    Vector2D newStart = start.rotate(-1/DIMENSION);
-    double newExtent = end.angleTo(newStart);
-    this.geom =  gsf.createArc(newStart.angle(), newExtent);
   }
   
   public void updateEnd(List<Shape> shapes) {
     Vector2D start = new Vector2D(this.geom.getStartPoint().getCoordinate());
     Vector2D end = new Vector2D(this.geom.getEndPoint().getCoordinate());
-    LineString newSegment = gsf.createArc(end.angle(), 1/DIMENSION);
-    for(Shape shape : shapes) {
-      if(this != shape && newSegment.intersects(shape.geom)) {
-        this.growStart = false;
+    
+    this.angleExtent += this.angleIncr;
+    if(this.angleExtent >= 2*PI) {
+        this.growEnd = false;
+        this.geom = gsf.createArc(start.angle(), 2*PI);
+    } else {
+      LineString newSegment = gsf.createArc(end.angle(), this.angleIncr);
+      for(Shape shape : shapes) {
+        if(this.angleExtent >= 2*PI || (this != shape && newSegment.intersects(shape.geom))) {
+          this.growEnd = false;
+        }
       }
+      
+      // TODO: clip to intersection
+      this.geom =  gsf.createArc(
+        Angle.normalizePositive(start.angle()),
+        Angle.normalizePositive(start.angleTo(end)) + this.angleIncr
+      );
     }
-    // TODO: clip to intersection
-    Vector2D newEnd = end.rotate(1/DIMENSION);
-    double newExtent = start.angleTo(newEnd);
-    this.geom =  gsf.createArc(newEnd.angle(), newExtent);
   }
   
   public void draw(){
