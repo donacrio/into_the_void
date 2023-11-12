@@ -2,7 +2,7 @@ public abstract class Shape {
   public LineString geom;
   public boolean growStart;
   public boolean growEnd;
-  
+ 
   public void grow(List<Shape> shapes) {
     if(this.growStart) {
       updateStart(shapes);
@@ -15,7 +15,17 @@ public abstract class Shape {
   public abstract void updateStart(List<Shape> shapes);
   public abstract void updateEnd(List<Shape> shapes);
   
-  public abstract void draw();
+  public void draw(){
+    Coordinate mid = this.geom.getCoordinateN(this.geom.getNumPoints()/2);
+    color c = CM.getColor(mid);
+    stroke(c);
+    strokeWeight(STROKE_WIDTH);
+    beginShape();
+    for(Coordinate coord : this.geom.getCoordinates()) {
+      vertex((float) coord.x, (float) coord.y);
+    }
+    endShape();
+  };
 }
 
 public class Boundary extends Shape {
@@ -38,7 +48,6 @@ public class Boundary extends Shape {
 
 public class Segment extends Shape {
   public Segment(Coordinate start, Coordinate end) {
-    super();
     this.geom = GF.createLineString(new Coordinate[] {start, end});
     this.growStart = true;
     this.growEnd = true;
@@ -73,14 +82,6 @@ public class Segment extends Shape {
     // TODO: clip to intersection
     this.geom = GF.createLineString(new Coordinate[]{ start.toCoordinate(), newEnd.toCoordinate()});
   }
-  
-  public void draw(){
-    beginShape();
-    for(Coordinate coord : this.geom.getCoordinates()) {
-      vertex((float) coord.x, (float) coord.y);
-    }
-    endShape();
-  };
 }
 
 public class Arc extends Shape {
@@ -90,7 +91,6 @@ public class Arc extends Shape {
   // TODO: set angleExtent & clockwise/anto-clockwise
   
   public Arc(double radius, double startAngle, double angleIncr) {
-    super();
     this.gsf = new GeometricShapeFactory(GF);
     this.gsf.setCentre(new Coordinate(0,0));
     this.gsf.setSize(2*radius);
@@ -117,7 +117,6 @@ public class Arc extends Shape {
         }
       }
       // TODO: clip to intersection
-      // TODO:
       this.geom =  gsf.createArc(
         Angle.normalizePositive(start.angle()- this.angleIncr),
         Angle.normalizePositive(start.angleTo(end)) + this.angleIncr
@@ -148,12 +147,4 @@ public class Arc extends Shape {
       );
     }
   }
-  
-  public void draw(){
-    beginShape();
-    for(Coordinate coord : this.geom.getCoordinates()) {
-      vertex((float) coord.x, (float) coord.y);
-    }
-    endShape();
-  };
 }

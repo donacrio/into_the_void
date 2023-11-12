@@ -66,41 +66,51 @@ import java.util.List;
 
 // CONSTANTS
 int DIMENSION = 720;
-int RESOLUTION = 10;
-int REFRESH_RATE = 4;
-int SHAPES_PER_STEP = 10;
+int SHAPES_PER_STEP = 25;
+int N_STEPS = 20;
+double ARC_PROPORTION = 0.25;
+
+// COLORS
+int[] HSB_BACKGROUND_COLOR = new int[] {45, 7, 92};
+int[][] HSB_COLORS = new int[][] {
+  {190, 100, 36},
+  {40, 95, 78},
+  {60, 25, 5}
+};
+double COLOR_OFFSET_INCREMENT = 0.1;
+int STROKE_WIDTH = 2;
+
+// ANIMATION
+int REFRESH_RATE = 50;
 
 // GLOBALS
 GeometryFactory GF;
+ShapeFactory SF;
+ColorMask CM;
 List<Shape> shapes;
-int nPoints = 0;
+int step = 0;
 
 void setup() {
   size(720, 720);
   
   GF = new GeometryFactory();
+  SF = new ShapeFactory();
+  CM = new ColorMask(HSB_COLORS);
+  
   shapes = new ArrayList<Shape>();
   
   shapes.add(new Boundary());
   
-  // TODO: random shape
   for(int i=0; i<SHAPES_PER_STEP; i++) {
-    Coordinate start = new Coordinate(0, 0);
-    Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-    Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
-    shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
+    shapes.add(SF.createInitialShape());
   }
   
-  for(int i=0; i<SHAPES_PER_STEP; i++) {
-    double radius = random(DIMENSION/2);
-    double startAngle = random(2*PI);
-    shapes.add(new Arc(radius, startAngle, 2*PI/DIMENSION));
-  }
+  colorMode(HSB, 360, 100, 100);
 }
 
 void draw() {
   noFill();
-  background(255);
+  background(HSB_BACKGROUND_COLOR[0], HSB_BACKGROUND_COLOR[1], HSB_BACKGROUND_COLOR[2]);
   translate(DIMENSION/2, DIMENSION/2);
 
   boolean stillGrowing = false;
@@ -110,22 +120,18 @@ void draw() {
       stillGrowing |= shape.growStart | shape.growEnd;
     }
   }
-  for(Shape shape : shapes) {
-        shape.draw();
+  for(int i = shapes.size() -1; i>0; i--) {
+    Shape shape = shapes.get(i);
+    shape.draw();
   }
   
   if(!stillGrowing) {
-    // New random shapes
-    for(int i=0; i<SHAPES_PER_STEP; i++) {
-      Coordinate start = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-      Coordinate end = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-      Coordinate direction = new Vector2D(start, end).normalize().toCoordinate();
-      shapes.add(new Segment(start, new Vector2D(start).translate(direction)));
-    }
-    for(int i=0; i<SHAPES_PER_STEP; i++) {
-      double radius = random(DIMENSION/2);
-      double startAngle = random(2*PI);
-      shapes.add(new Arc(radius, startAngle, 2*PI/DIMENSION));
+    step++;
+    if(step <= N_STEPS) {
+      // New random shapes
+      for(int i=0; i<SHAPES_PER_STEP; i++) {
+        shapes.add(SF.createRandomShape());
+      }
     }
   }
 }
