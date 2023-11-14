@@ -16,16 +16,10 @@ public abstract class Shape {
   public abstract void updateEnd(List<Shape> shapes);
   
   public void draw(){
-    Coordinate mid = this.geom.getCoordinateN(this.geom.getNumPoints()/2);
-    color c = CM.getColor(mid);
-    stroke(c);
-    strokeWeight(STROKE_WIDTH);
-    beginShape();
-    for(Coordinate coord : this.geom.getCoordinates()) {
-      vertex((float) coord.x, (float) coord.y);
-    }
-    endShape();
-  };
+    // TODO: sum existing pixel color ?
+    Brush brush = new Brush(this.geom, 200, color(0)); // TODO: use variable for width
+    brush.render();
+  }
 }
 
 public class Boundary extends Shape {
