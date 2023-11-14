@@ -65,73 +65,72 @@ import java.util.HashSet;
 import java.util.List;
 
 // CONSTANTS
-int DIMENSION = 720;
-int SHAPES_PER_STEP = 25;
-int N_STEPS = 20;
-double ARC_PROPORTION = 0.25;
+int DIMENSION = 1080;
+int SHAPES_PER_STEP = 15; // TODO: randomGaussian
+int N_STEPS = 200;
+double ARC_PROPORTION = 0.2; // TODO: randomGaussian
 
-// COLORS
-int[] HSB_BACKGROUND_COLOR = new int[] {45, 7, 92};
-int[][] HSB_COLORS = new int[][] {
-  {190, 100, 36},
-  {40, 95, 78},
-  {60, 25, 5}
-};
-double COLOR_OFFSET_INCREMENT = 0.1;
-int STROKE_WIDTH = 2;
+// COLOR PARAMS
 
-// ANIMATION
-int REFRESH_RATE = 50;
+
 
 // GLOBALS
 GeometryFactory GF;
 ShapeFactory SF;
-ColorMask CM;
-List<Shape> shapes;
-int step = 0;
 
 void setup() {
-  size(720, 720);
+  // SETUP
+  size(1080, 1080);
   
   GF = new GeometryFactory();
   SF = new ShapeFactory();
-  CM = new ColorMask(HSB_COLORS);
   
-  shapes = new ArrayList<Shape>();
+  List<Shape> shapes = new ArrayList<Shape>();
   
   shapes.add(new Boundary());
   
-  for(int i=0; i<SHAPES_PER_STEP; i++) {
-    shapes.add(SF.createInitialShape());
+  // GROW MODEL
+  for(int step=0; step<=N_STEPS; step++) {
+    println(String.format("Step %d/%d: creating shapes...", step, N_STEPS));
+    if(step == 0) {
+      for(int i=0; i<SHAPES_PER_STEP; i++) {
+      shapes.add(SF.createInitialShape());
+      }
+    } else {
+      for(int i=0; i<SHAPES_PER_STEP; i++) {
+          shapes.add(SF.createRandomShape());
+      }
+    }
+    
+    println(String.format("Step %d/%d: growing shapes...", step, N_STEPS));
+    growShapes(shapes);
   }
   
+  // RENDERING
   colorMode(HSB, 360, 100, 100);
+  noFill();
+  background(45, 7, 92);
+  translate(DIMENSION/2, DIMENSION/2);
+  
+  for(int i=shapes.size()-1; i>=0; i--) {
+    // Drawing backwards to get first shapes drawn on top (?)
+    println(String.format("Drawing shape %d/%d...", shapes.size()-i, shapes.size())); 
+    shapes.get(i).draw();
+  }
+
+  save("out/artwork.tiff");
+  noLoop();
 }
 
-void draw() {
-  noFill();
-  background(HSB_BACKGROUND_COLOR[0], HSB_BACKGROUND_COLOR[1], HSB_BACKGROUND_COLOR[2]);
-  translate(DIMENSION/2, DIMENSION/2);
-
-  boolean stillGrowing = false;
-  for(int i=0; i<REFRESH_RATE; i++) {
+void growShapes(List<Shape> shapes) {
+  boolean stillGrowing = true;
+  while(stillGrowing) {
+    stillGrowing = false;
     for(Shape shape : shapes) {
       shape.grow(shapes);
       stillGrowing |= shape.growStart | shape.growEnd;
     }
   }
-  for(int i = shapes.size() -1; i>0; i--) {
-    Shape shape = shapes.get(i);
-    shape.draw();
-  }
-  
-  if(!stillGrowing) {
-    step++;
-    if(step <= N_STEPS) {
-      // New random shapes
-      for(int i=0; i<SHAPES_PER_STEP; i++) {
-        shapes.add(SF.createRandomShape());
-      }
-    }
-  }
 }
+
+void draw() {}
