@@ -70,13 +70,14 @@ int SHAPES_PER_STEP = 15; // TODO: randomGaussian
 int N_STEPS = 200;
 double ARC_PROPORTION = 0.2; // TODO: randomGaussian
 
-// COLOR PARAMS
-
-
+// RENDERING
+int REFRESH_RATE = 1000;
 
 // GLOBALS
 GeometryFactory GF;
 ShapeFactory SF;
+ArrayList<ArrayList<Shape>> steps_shapes;
+ArrayList<float[]> points; // TODO: use javafx pair
 
 void setup() {
   // SETUP
@@ -85,13 +86,14 @@ void setup() {
   GF = new GeometryFactory();
   SF = new ShapeFactory();
   
-  List<Shape> shapes = new ArrayList<Shape>();
+  steps_shapes = new ArrayList<ArrayList<Shape>>();
   
-  shapes.add(new Boundary());
+  steps_shapes.add(new ArrayList<Shape>() {{add(new Boundary());}});
   
   // GROW MODEL
   for(int step=0; step<=N_STEPS; step++) {
     println(String.format("Step %d/%d: creating shapes...", step, N_STEPS));
+    ArrayList<Shape> shapes = new ArrayList<Shape>();
     if(step == 0) {
       for(int i=0; i<SHAPES_PER_STEP; i++) {
       shapes.add(SF.createInitialShape());
@@ -101,36 +103,49 @@ void setup() {
           shapes.add(SF.createRandomShape());
       }
     }
+    steps_shapes.add(shapes);
     
     println(String.format("Step %d/%d: growing shapes...", step, N_STEPS));
     growShapes(shapes);
   }
   
-  // RENDERING
+  points = new ArrayList<float[]>();
+  // Drawing backwards to get first shapes drawn on top (?)
+  for(int i=steps_shapes.size()-1; i>=0; i--) {
+    println(String.format("Creating shape points for step %d/%d...", steps_shapes.size()-i, steps_shapes.size())); 
+    ArrayList<Shape> shapes = steps_shapes.get(i);
+    for(Shape shape : shapes) {
+      points.addAll(shape.create_points());
+    }
+    
+  }  
+}
+
+int curr = 0;
+
+void draw() {
   colorMode(HSB, 360, 100, 100);
   noFill();
   background(45, 7, 92);
   translate(DIMENSION/2, DIMENSION/2);
-  
-  for(int i=shapes.size()-1; i>=0; i--) {
-    // Drawing backwards to get first shapes drawn on top (?)
-    println(String.format("Drawing shape %d/%d...", shapes.size()-i, shapes.size())); 
-    shapes.get(i).draw();
+  while(curr < points.size()) {
+    for(int i=0; i<REFRESH_RATE; i++) {
+      float[] p = points.get(curr + i);
+      point(p[0], p[1]);
+    }
   }
-
-  save("out/artwork.tiff");
-  noLoop();
+  curr += REFRESH_RATE;
 }
 
 void growShapes(List<Shape> shapes) {
+  println(shapes);
   boolean stillGrowing = true;
   while(stillGrowing) {
     stillGrowing = false;
-    for(Shape shape : shapes) {
+    for(Shape shape : shapes) { //<>//
+      println(shape);
       shape.grow(shapes);
       stillGrowing |= shape.growStart | shape.growEnd;
     }
   }
 }
-
-void draw() {}

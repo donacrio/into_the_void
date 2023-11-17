@@ -22,26 +22,29 @@ class Brush {
     this.strokeColor = strokeColor;
   }
 
-void render() {
-  Coordinate[] coords = this.geom.getCoordinates();
-  float theta = random(0.003, 0.03); // TODO: constructor arg? based on random gen, maks, etc
-  for(int i=1; i<coords.length-1; i++) {
-    float x = (float) coords[i].x;
-    float y = (float) coords[i].y;
-    theta += random(-0.005, 0.005); // TODO: constructor arg? based on constant
-    theta = constrain(theta, -this.maxTheta, this.maxTheta);
-    // TODO: if dWidth small, switch color?
-    stroke(strokeColor, 22); // TODO: alpha base on variable or constant
-    point(x, y);
+  ArrayList<float[]> create_points() {
+    ArrayList<float[]> points = new ArrayList<float[]>();
     
-    float directionAngle = (float) new Vector2D(coords[i-1], coords[i+1]).angle();
-    for (int j=0; j<brushWidth; j++) {
-      float alpha = 255*0.1*(1-j/brushWidth);
-      stroke(strokeColor, alpha);
-      float w = this.brushWidth*sin(j*theta*0.005); // TODO: angle constant
-      point(x - w*sin(directionAngle), y + w*cos(directionAngle)); 
-      point(x + w*sin(directionAngle), y - w*cos(directionAngle));
+    Coordinate[] coords = this.geom.getCoordinates();
+    float theta = random(0.003, 0.03); // TODO: constructor arg? based on random gen, maks, etc
+    for(int i=1; i<coords.length-1; i++) {
+      float x = (float) coords[i].x;
+      float y = (float) coords[i].y;
+      theta += random(-0.005, 0.005); // TODO: constructor arg? based on constant
+      theta = constrain(theta, -this.maxTheta, this.maxTheta);
+      // TODO: if dWidth small, switch color?
+      stroke(strokeColor, 22); // TODO: alpha base on variable or constant
+      points.add(new float[] {x, y});
+      
+      float directionAngle = (float) new Vector2D(coords[i-1], coords[i+1]).angle();
+      for (int j=0; j<brushWidth; j++) {
+        float alpha = 255*0.1*(1-j/brushWidth);
+        stroke(strokeColor, alpha);
+        float w = this.brushWidth*sin(j*theta*0.005); // TODO: angle constant
+        points.add(new float[] {x - w*sin(directionAngle), y + w*cos(directionAngle)});
+        points.add(new float[] {x + w*sin(directionAngle), y - w*cos(directionAngle)});
       }
     }
+    return points;
   }
 }
