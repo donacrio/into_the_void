@@ -14,12 +14,6 @@ public abstract class Shape {
   
   public abstract void updateStart(List<Shape> shapes);
   public abstract void updateEnd(List<Shape> shapes);
-  
-  public void draw(){
-    // TODO: sum existing pixel color ?
-    Brush brush = new Brush(this.geom, 200, color(0)); // TODO: use variable for width
-    brush.render();
-  }
 }
 
 public class Boundary extends Shape {

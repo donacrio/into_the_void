@@ -67,37 +67,45 @@ import java.util.List;
 // CONSTANTS
 int DIMENSION = 1080;
 int SHAPES_PER_STEP = 10; // TODO: randomGaussian
-int N_STEPS = 10;
-double ARC_PROPORTION = 0.25; // TODO: randomGaussian
+int N_STEPS = 25;
+double ARC_PROPORTION = 0.2; // TODO: randomGaussian
 
-// COLOR PARAMS
-//int[] HSB_BACKGROUND_COLOR = new int[] {45, 7, 92};
-//int[][] HSB_COLORS = new int[][] {
-//  {190, 100, 36},
-//  {40, 95, 78},
-//  {60, 25, 5}
-//};
-//double COLOR_OFFSET_INCREMENT = 0.5;
+int[][] HSB_COLORS = new int[][] {
+  //{45, 7, 92},
+  //{190, 100, 36},
+  //{40, 95, 78},
+  //{60, 25, 5}
+  {0, 100, 0}
+};
 
+
+// RENDERING
+int REFRESH_RATE = 10000;
 
 // GLOBALS
 GeometryFactory GF;
 ShapeFactory SF;
+ArrayList<ArrayList<Shape>> stepsShapes;
+ArrayList<ArrayList<Brush>> stepsBrushes; // TODO: use javafx pair
+ArrayList<ColorPoint> colorPoints;
 
 void setup() {
   // SETUP
   size(1080, 1080);
+  colorMode(HSB, 360, 100, 100);
+  noFill();
   
   GF = new GeometryFactory();
   SF = new ShapeFactory();
   
-  List<Shape> shapes = new ArrayList<Shape>();
+  stepsShapes = new ArrayList<ArrayList<Shape>>();
   
-  shapes.add(new Boundary());
+  stepsShapes.add(new ArrayList<Shape>() {{add(new Boundary());}});
   
   // GROW MODEL
   for(int step=0; step<=N_STEPS; step++) {
-    println(String.format("Step %d/%d: creating shapes...", step, N_STEPS));
+    println(String.format("Creating shapes: %d/%d", step, N_STEPS));
+    ArrayList<Shape> shapes = new ArrayList<Shape>();
     if(step == 0) {
       for(int i=0; i<SHAPES_PER_STEP; i++) {
       shapes.add(SF.createInitialShape());
@@ -107,25 +115,65 @@ void setup() {
           shapes.add(SF.createRandomShape());
       }
     }
+    stepsShapes.add(shapes);
     
-    println(String.format("Step %d/%d: growing shapes...", step, N_STEPS));
-    growShapes(shapes);
+    ArrayList<Shape> allShapes = new ArrayList<Shape>();
+    stepsShapes.forEach(allShapes::addAll);
+    growShapes(allShapes);
   }
   
-  // RENDERING
-  //colorMode(HSB, 360, 100, 100);
-  noFill();
-  background(255);
-  translate(DIMENSION/2, DIMENSION/2);
-  
-  for(int i=shapes.size()-1; i>=0; i--) {
-    // Drawing backwards to get first shapes drawn on top (?)
-    println(String.format("Drawing shape %d/%d...", shapes.size()-i, shapes.size())); 
-    shapes.get(i).draw();
+  stepsBrushes = new ArrayList<ArrayList<Brush>>();
+  // Skipping boundary
+  for(int i=1; i<stepsShapes.size(); i++) {
+    println(String.format("Creating color points: %d/%d", i, stepsShapes.size())); 
+    ArrayList<Shape> shapes = stepsShapes.get(i);
+    ArrayList<Brush> brushes = new ArrayList<Brush>();
+    for(Shape shape : shapes) {
+      int[] c = HSB_COLORS[(int) random(HSB_COLORS.length-1)];
+      Brush brush = new Brush(shape.geom, 100, color(c[0], c[1], c[2])); // TODO: use variable for width
+      brush.createColorPoints();
+      brushes.add(brush);
+    }
+    stepsBrushes.add(brushes);
   }
+  
+  colorPoints = new ArrayList<ColorPoint>();
+  for(ArrayList<Brush> brushes : stepsBrushes) {
+    int maxIndex = brushes.stream().map(b -> b.colorPoints).mapToInt(List::size).max().getAsInt();
+    int i = 0;
+    while(i < maxIndex) {
+      for(Brush brush : brushes) {
+        if(i < brush.colorPoints.size()) {
+          colorPoints.add(brush.colorPoints.get(i));
+        }
+        i++;
+      }
+    }
+  }
+  
+  background(45, 7, 92);
+}
 
-  save("artwork.tiff");
-  noLoop();
+int curr = 0;
+
+void draw() {
+  
+  translate(DIMENSION/2, DIMENSION/2);    
+  for(int i=0; i<REFRESH_RATE; i++) {
+    if(curr * REFRESH_RATE + i < colorPoints.size()) {
+      ColorPoint colorPoint = colorPoints.get(curr * REFRESH_RATE + i);
+      stroke(colorPoint.c, colorPoint.a);
+      point(colorPoint.x, colorPoint.y);
+    }
+  }
+  save(String.format("out/animated/%d.tiff", curr));
+  curr++;
+  println(curr, curr * REFRESH_RATE, colorPoints.size());
+  if(curr * REFRESH_RATE >= colorPoints.size()) {
+    save("out/animated/final.tiff");
+    println("Saved to output!");
+    noLoop();
+  }
 }
 
 void growShapes(List<Shape> shapes) {
