@@ -14,13 +14,6 @@ public abstract class Shape {
   
   public abstract void updateStart(List<Shape> shapes);
   public abstract void updateEnd(List<Shape> shapes);
-  
-  public ArrayList<float[]> create_points(){
-    // TODO: sum existing pixel color ?
-    int[] c = HSB_COLORS[(int) random(HSB_COLORS.length-1)];
-    Brush brush = new Brush(this.geom, 100, color(c[0], c[1], c[2])); // TODO: use variable for width
-    return brush.create_points();
-  }
 }
 
 public class Boundary extends Shape {
