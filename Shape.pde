@@ -14,6 +14,7 @@ public abstract class Shape {
   
   public abstract void updateStart(List<Shape> shapes);
   public abstract void updateEnd(List<Shape> shapes);
+  
 }
 
 public class Boundary extends Shape {
@@ -31,7 +32,6 @@ public class Boundary extends Shape {
   
   public void updateStart(List<Shape> shapes){};
   public void updateEnd(List<Shape> shapes){};
-  public void draw() {}
 }
 
 public class Segment extends Shape {
@@ -69,6 +69,14 @@ public class Segment extends Shape {
     }
     // TODO: clip to intersection
     this.geom = GF.createLineString(new Coordinate[]{ start.toCoordinate(), newEnd.toCoordinate()});
+  }
+  
+  void draw(color c, float strokeWidth) {
+    strokeWeight(strokeWidth);
+    stroke(c);
+    Coordinate start = this.geom.getStartPoint().getCoordinate();
+    Coordinate end = this.geom.getEndPoint().getCoordinate();
+    line((float) start.x, (float) start.y, (float) end.x, (float) end.y);
   }
 }
 

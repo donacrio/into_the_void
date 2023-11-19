@@ -1,22 +1,48 @@
-float MAX_THETA = 0.1;
-
-//double COLOR_OFFSET_INCREMENT = 0.5;
-class Brush {
-  private ArrayList<ColorPoint> colorPoints;
-  private LineString geom;
-  private float brushWidth;
-  private float maxTheta;
-  private color strokeColor;
 
 
-  Brush(LineString geom, float brushWidth, color strokeColor) {
+abstract class Brush {
+  ArrayList<ColorPoint> colorPoints;
+  LineString geom;
+  float brushWidth;
+  color strokeColor;
+  
+  abstract void createColorPoints();
+}
+
+class Stroke extends Brush {
+  Stroke(LineString geom, float brushWidth, color strokeColor) {
     this.colorPoints = new ArrayList<ColorPoint>();
-    this.geom = (LineString) Densifier.densify(geom, 0.5); // TODO: use constant or param here
+    this.geom = (LineString) Densifier.densify(geom, 1); // TODO: use constant or param here
+    this.brushWidth = brushWidth;
+    this.strokeColor = strokeColor;
+  }
+  
+  void createColorPoints() {
+    Coordinate[] coords = this.geom.getCoordinates();
+    for(int i=1; i<coords.length-1; i++) {
+      float x = (float) coords[i].x;
+      float y = (float) coords[i].y;
+      this.colorPoints.add(new ColorPoint(x, y, color(strokeColor), 100));  // TODO: alpha base on variable or constant
+    }
+  }
+}
+
+class SandStroke extends Brush {
+  private float maxTheta;
+
+
+  SandStroke(LineString geom, float brushWidth, color strokeColor) {
+    this.colorPoints = new ArrayList<ColorPoint>();
+    this.geom = (LineString) Densifier.densify(geom, 1); // TODO: use constant or param here
     this.brushWidth = brushWidth;
     this.maxTheta = MAX_THETA; // TODO: constructor arg? based on constant
     this.strokeColor = strokeColor;
   }
 
+  ArrayList<ColorPoint> getColorPoints() {
+    return this.colorPoints;
+  }
+  
   void createColorPoints() {    
     Coordinate[] coords = this.geom.getCoordinates();
     float theta = random(0.003, 0.03); // TODO: constructor arg? based on random gen, maks, etc

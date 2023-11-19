@@ -64,10 +64,12 @@ import org.locationtech.jts.util.*;
 import java.util.HashSet;
 import java.util.List;
 
+import processing.svg.*;
+
 // CONSTANTS
 int DIMENSION = 1080;
-int SHAPES_PER_STEP = 10; // TODO: randomGaussian
-int N_STEPS = 25;
+int SHAPES_PER_STEP = 5; // TODO: randomGaussian
+int N_STEPS = 20;
 double ARC_PROPORTION = 0.2; // TODO: randomGaussian
 
 int[][] HSB_COLORS = new int[][] {
@@ -77,10 +79,10 @@ int[][] HSB_COLORS = new int[][] {
   //{60, 25, 5}
   {0, 100, 0}
 };
-
+float MAX_THETA = 0.1;
 
 // RENDERING
-int REFRESH_RATE = 10000;
+int REFRESH_RATE = 100000;
 
 // GLOBALS
 GeometryFactory GF;
@@ -130,7 +132,7 @@ void setup() {
     ArrayList<Brush> brushes = new ArrayList<Brush>();
     for(Shape shape : shapes) {
       int[] c = HSB_COLORS[(int) random(HSB_COLORS.length-1)];
-      Brush brush = new Brush(shape.geom, 100, color(c[0], c[1], c[2])); // TODO: use variable for width
+      Brush brush = new SandStroke(shape.geom, 200, color(c[0], c[1], c[2])); // TODO: use variable for width
       brush.createColorPoints();
       brushes.add(brush);
     }
@@ -157,7 +159,6 @@ void setup() {
 int curr = 0;
 
 void draw() {
-  
   translate(DIMENSION/2, DIMENSION/2);    
   for(int i=0; i<REFRESH_RATE; i++) {
     if(curr * REFRESH_RATE + i < colorPoints.size()) {
@@ -168,10 +169,11 @@ void draw() {
   }
   save(String.format("out/animated/%d.tiff", curr));
   curr++;
-  println(curr, curr * REFRESH_RATE, colorPoints.size());
   if(curr * REFRESH_RATE >= colorPoints.size()) {
     save("out/animated/final.tiff");
-    println("Saved to output!");
+    println("Saved to tiff!");
+    saveSVG();
+    println("Saved to svg!");
     noLoop();
   }
 }
@@ -187,4 +189,23 @@ void growShapes(List<Shape> shapes) {
   }
 }
 
-void draw() {}
+void saveSVG() {
+  beginRecord(SVG, "out/animated/final.svg");
+  //background(0, 0, 100);
+  translate(DIMENSION/2, DIMENSION/2);
+  noFill();
+  for(ArrayList<Shape> shapes : stepsShapes.subList(1, stepsShapes.size())) {
+    for(Shape shape : shapes) {
+      int[] c = HSB_COLORS[(int) random(HSB_COLORS.length-1)];
+      Brush brush = new Stroke(shape.geom, 200, color(c[0], c[1], c[2])); // TODO: use variable for width
+      brush.createColorPoints();
+      beginShape();
+      for(ColorPoint p : brush.colorPoints) {
+        stroke(p.c, p.a);
+        vertex(p.x, p.y);
+      }
+      endShape();
+    }
+  }
+  endRecord();
+}
