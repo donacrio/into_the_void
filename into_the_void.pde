@@ -186,3 +186,5 @@ void growShapes(List<Shape> shapes) {
     }
   }
 }
+
+void draw() {}
