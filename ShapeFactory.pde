@@ -10,12 +10,20 @@ public class ShapeFactory {
     if(random(1) < ARC_PROPORTION) {
       return this.createArc();
     }
-    Coordinate start = new Coordinate(random(-DIMENSION/2, DIMENSION/2), random(-DIMENSION/2, DIMENSION/2));
-    return this.createSegment(start);
+    return this.createSegment();
   }
   
   private Shape createInitialSegment() {
     Coordinate start = new Coordinate(0, 0);
+    return this.createSegment(start);
+  }
+  
+  private Shape createSegment() {
+    float radius = random(1) * DIMENSION/2;
+    float angle = randomGaussian() * PI/3;
+    float x = radius * cos(angle);
+    float y = radius * sin(angle);
+    Coordinate start = new Coordinate(x, y);
     return this.createSegment(start);
   }
   
@@ -25,9 +33,11 @@ public class ShapeFactory {
     return new Segment(start, new Vector2D(start).translate(direction));
   }
   
+  
+  
   private Shape createArc() {
-    double radius = random(DIMENSION/2);
-    double startAngle = random(2*PI);
-    return new Arc(radius, startAngle, PI/DIMENSION);
+    float radius = random(1) * DIMENSION/2;
+    float angle = randomGaussian() * PI/3;
+    return new Arc(radius, angle, PI/DIMENSION);
   }
 }

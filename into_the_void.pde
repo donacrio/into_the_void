@@ -68,17 +68,10 @@ import processing.svg.*;
 
 // CONSTANTS
 int DIMENSION = 1080;
-int SHAPES_PER_STEP = 5; // TODO: randomGaussian
-int N_STEPS = 20;
-double ARC_PROPORTION = 0.2; // TODO: randomGaussian
+int SHAPES_PER_STEP = 25; // TODO: randomGaussian
+int N_STEPS = 50;
+double ARC_PROPORTION = 0.1; // TODO: randomGaussian
 
-int[][] HSB_COLORS = new int[][] {
-  //{45, 7, 92},
-  //{190, 100, 36},
-  //{40, 95, 78},
-  //{60, 25, 5}
-  {0, 100, 0}
-};
 float MAX_THETA = 0.1;
 
 // RENDERING
@@ -124,58 +117,40 @@ void setup() {
     growShapes(allShapes);
   }
   
-  stepsBrushes = new ArrayList<ArrayList<Brush>>();
-  // Skipping boundary
-  for(int i=1; i<stepsShapes.size(); i++) {
-    println(String.format("Creating color points: %d/%d", i, stepsShapes.size())); 
-    ArrayList<Shape> shapes = stepsShapes.get(i);
-    ArrayList<Brush> brushes = new ArrayList<Brush>();
-    for(Shape shape : shapes) {
-      int[] c = HSB_COLORS[(int) random(HSB_COLORS.length-1)];
-      Brush brush = new SandStroke(shape.geom, 200, color(c[0], c[1], c[2])); // TODO: use variable for width
-      brush.createColorPoints();
-      brushes.add(brush);
-    }
-    stepsBrushes.add(brushes);
-  }
-  
-  colorPoints = new ArrayList<ColorPoint>();
-  for(ArrayList<Brush> brushes : stepsBrushes) {
-    int maxIndex = brushes.stream().map(b -> b.colorPoints).mapToInt(List::size).max().getAsInt();
-    int i = 0;
-    while(i < maxIndex) {
-      for(Brush brush : brushes) {
-        if(i < brush.colorPoints.size()) {
-          colorPoints.add(brush.colorPoints.get(i));
-        }
-        i++;
-      }
-    }
-  }
+  //stepsBrushes = new ArrayList<ArrayList<Brush>>();
+  //// Skipping boundary
+  //for(int i=1; i<stepsShapes.size(); i++) {
+  //  println(String.format("Creating color points: %d/%d", i, stepsShapes.size())); 
+  //  ArrayList<Shape> shapes = stepsShapes.get(i);
+  //  ArrayList<Brush> brushes = new ArrayList<Brush>();
+  //  for(Shape shape : shapes) {
+  //    Brush brush = new SandStroke(shape.geom, 200, color(0, 100, 0));
+  //    brush.createColorPoints();
+  //    brushes.add(brush);
+  //  }
+  //  stepsBrushes.add(brushes);
+  //}
+ 
   
   background(45, 7, 92);
-}
-
-int curr = 0;
-
-void draw() {
-  translate(DIMENSION/2, DIMENSION/2);    
-  for(int i=0; i<REFRESH_RATE; i++) {
-    if(curr * REFRESH_RATE + i < colorPoints.size()) {
-      ColorPoint colorPoint = colorPoints.get(curr * REFRESH_RATE + i);
-      stroke(colorPoint.c, colorPoint.a);
-      point(colorPoint.x, colorPoint.y);
+  
+  beginRecord(SVG, "out/final.svg");
+  //background(0, 0, 100);
+  translate(DIMENSION/2, DIMENSION/2);
+  noFill();
+  for(ArrayList<Shape> shapes : stepsShapes.subList(1, stepsShapes.size())) {
+    for(Shape shape : shapes) {
+      Brush brush = new Stroke(shape.geom, 200, color(0, 100, 0));
+      brush.createColorPoints();
+      beginShape();
+      for(ColorPoint p : brush.colorPoints) {
+        stroke(p.c, p.a);
+        vertex(p.x, p.y);
+      }
+      endShape();
     }
   }
-  save(String.format("out/animated/%d.tiff", curr));
-  curr++;
-  if(curr * REFRESH_RATE >= colorPoints.size()) {
-    save("out/animated/final.tiff");
-    println("Saved to tiff!");
-    saveSVG();
-    println("Saved to svg!");
-    noLoop();
-  }
+  endRecord();
 }
 
 void growShapes(List<Shape> shapes) {
@@ -187,25 +162,4 @@ void growShapes(List<Shape> shapes) {
       stillGrowing |= shape.growStart | shape.growEnd;
     }
   }
-}
-
-void saveSVG() {
-  beginRecord(SVG, "out/animated/final.svg");
-  //background(0, 0, 100);
-  translate(DIMENSION/2, DIMENSION/2);
-  noFill();
-  for(ArrayList<Shape> shapes : stepsShapes.subList(1, stepsShapes.size())) {
-    for(Shape shape : shapes) {
-      int[] c = HSB_COLORS[(int) random(HSB_COLORS.length-1)];
-      Brush brush = new Stroke(shape.geom, 200, color(c[0], c[1], c[2])); // TODO: use variable for width
-      brush.createColorPoints();
-      beginShape();
-      for(ColorPoint p : brush.colorPoints) {
-        stroke(p.c, p.a);
-        vertex(p.x, p.y);
-      }
-      endShape();
-    }
-  }
-  endRecord();
 }
