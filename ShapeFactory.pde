@@ -20,7 +20,7 @@ public class ShapeFactory {
   
   private Shape createSegment() {
     float radius = random(1) * DIMENSION/2;
-    float angle = randomGaussian() * PI/3;
+    float angle = randomGaussian() * PI/4;
     float x = radius * cos(angle);
     float y = radius * sin(angle);
     Coordinate start = new Coordinate(x, y);

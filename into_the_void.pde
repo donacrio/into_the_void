@@ -68,9 +68,9 @@ import processing.svg.*;
 
 // CONSTANTS
 int DIMENSION = 1080;
-int SHAPES_PER_STEP = 25; // TODO: randomGaussian
-int N_STEPS = 50;
-double ARC_PROPORTION = 0.1; // TODO: randomGaussian
+int SHAPES_PER_STEP = 10; // TODO: randomGaussian
+int N_STEPS = 100;
+double ARC_PROPORTION = 0.05; // TODO: randomGaussian
 
 float MAX_THETA = 0.1;
 
